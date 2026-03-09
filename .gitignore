@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Production builds
+client/dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+server/logs/
+*.log
+
+# Editor & System
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.bak
+Thumbs.db
+.antigravity/
+
+# Temporary files
+/tmp/
+out.txt
+output.txt
+gemini_test.txt
+tcs_response.txt
+price_result.txt
+quote_test.json
+chat_result.json
+models.json
+test-yahoo.js
+test.js
+test-db.js
+test-svc.js
+test-svc2.js
+test-yahoo-hist.js
+test-yahoo-hist2.js
+test-yf.js
+server/out*.txt
+server/gemini_test.txt
