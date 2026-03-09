@@ -1,39 +1,29 @@
 const { Sequelize } = require('sequelize');
 
-const sequelize = (process.env.DATABASE_URL || process.env.POSTGRES_URI)
-  ? new Sequelize(process.env.DATABASE_URL || process.env.POSTGRES_URI, {
-    dialect: 'postgres',
-    logging: false,
-    dialectOptions: process.env.NODE_ENV === 'production' ? {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
-    } : {}
-  })
-  : new Sequelize(
-    process.env.PG_DATABASE || 'stock_tracker',
-    process.env.PG_USER || 'postgres',
-    process.env.PG_PASSWORD || 'password',
-    {
-      host: process.env.PG_HOST || 'localhost',
-      port: process.env.PG_PORT || 5432,
-      dialect: 'postgres',
-      logging: false, // Set to true to see SQL queries
-      dialectOptions: process.env.NODE_ENV === 'production' ? {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false // Often needed for Supabase/Neon unless you bundle certificates
-        }
-      } : {},
-      pool: {
-        max: 5,
-        min: 0,
-        acquire: 30000,
-        idle: 10000
-      }
+const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URI;
+
+if (!connectionString) {
+  console.error('❌ CRITICAL ERROR: DATABASE_URL is not defined in environment variables.');
+  console.error('If you are deploying to Render/Supabase, please add DATABASE_URL or POSTGRES_URI to your environment.');
+  process.exit(1);
+}
+
+const sequelize = new Sequelize(connectionString, {
+  dialect: 'postgres',
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
     }
-  );
+  },
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  }
+});
 
 const connectDB = async () => {
   try {
