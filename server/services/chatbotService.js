@@ -236,8 +236,7 @@ ${stockContext ? '\n\n🚨 SYSTEM INJECTION START 🚨\nCurrent Stock Data (This
             try {
                 const { GoogleGenerativeAI } = require('@google/generative-ai');
                 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-                // Switching to 2.5 flash to avoid API mismatch errors that user might be seeing
-                const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
                 // Format history for Gemini
                 const historyStr = chatHistory.length > 0
