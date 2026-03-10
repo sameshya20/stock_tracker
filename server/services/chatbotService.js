@@ -20,7 +20,7 @@ const KNOWN_SYMBOLS = new Set([
     // Others
     'SPY', 'QQQ', 'BRK', 'BRKB', 'XOM', 'CVX', 'PFE', 'JNJ', 'MRNA',
     'UBER', 'LYFT', 'ABNB', 'COIN', 'HOOD', 'GME', 'AMC', 'SHOP',
-    'BA', 'RTX', 'LMT', 'DELL', 'HPQ', 'NOK'
+    'BA', 'RTX', 'LMT', 'DELL', 'HPQ', 'NOK', 'COOP'
 ]);
 
 // Map common company names to symbols
@@ -58,7 +58,8 @@ const COMPANY_NAME_MAP = {
     'uber': 'UBER', 'lyft': 'LYFT', 'airbnb': 'ABNB', 'coinbase': 'COIN',
     'boeing': 'BA', 'exxon': 'XOM', 'chevron': 'CVX',
     'pfizer': 'PFE', 'johnson': 'JNJ', 'moderna': 'MRNA',
-    'shopify': 'SHOP'
+    'shopify': 'SHOP',
+    'mr cooper': 'COOP', 'mr. cooper': 'COOP'
 };
 
 class ChatbotService {
@@ -66,6 +67,97 @@ class ChatbotService {
         this.openai = null;
         if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your_openai_api_key') {
             this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        }
+    }
+
+    // Detect if the question is asking for historical data/past days
+    detectStockHistoryQuery(userMessage) {
+        const msg = userMessage.toLowerCase();
+
+        // Keywords that indicate history
+        const hasHistoryKeywords =
+            msg.includes('past') || msg.includes('last') || msg.includes('history') ||
+            msg.includes('previous days') || msg.includes('recent days');
+
+        if (!hasHistoryKeywords) return null;
+
+        // Extract number of days (default to 10 if not specified)
+        const dayMatch = msg.match(/\b(\d+)\b\s*(day|trading)/);
+        const days = dayMatch ? parseInt(dayMatch[1]) : 10;
+
+        // Limit to 30 days for chat response efficiency
+        const limitedDays = Math.min(days, 30);
+
+        // Find the symbol
+        let symbol = null;
+        for (const [name, sym] of Object.entries(COMPANY_NAME_MAP)) {
+            if (msg.includes(name)) {
+                symbol = sym;
+                break;
+            }
+        }
+
+        if (!symbol) {
+            const upperTokens = userMessage.match(/\b[A-Z]{1,5}\b/g) || [];
+            for (const token of upperTokens) {
+                if (KNOWN_SYMBOLS.has(token)) {
+                    symbol = token;
+                    break;
+                }
+            }
+        }
+
+        return symbol ? { symbol, days: limitedDays } : null;
+    }
+
+    // Generate response for historical data
+    async generateStockHistoryResponse(symbol, days = 10) {
+        try {
+            // We fetch slightly more to calculate trend
+            const range = days <= 5 ? '5d' : days <= 12 ? '1mo' : '3mo';
+            const history = await StockService.getHistoricalData(symbol, range);
+
+            if (!history || history.length === 0) {
+                return `I couldn't fetch historical data for **${symbol}** right now.`;
+            }
+
+            // Get the last N days
+            const recentData = history.slice(-days).reverse();
+            const quote = await StockService.getQuote(symbol);
+
+            const companyName = quote.companyName || symbol;
+            const currency = this.getCurrencySymbol(quote.currency);
+
+            let table = `Here are the last ~${recentData.length} trading days closing prices for **${companyName}** (approximate from recent market data):\n\n`;
+            table += `| Date | Close Price (${quote.currency}) |\n`;
+            table += `| :--- | :--- |\n`;
+
+            recentData.forEach(day => {
+                const dateStr = new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                table += `| ${dateStr} | ${currency}${day.close.toFixed(2)} |\n`;
+            });
+
+            // Calculate Trend
+            const oldestClose = recentData[recentData.length - 1].close;
+            const newestClose = recentData[0].close;
+            const priceDiff = newestClose - oldestClose;
+            const percentChange = (priceDiff / oldestClose) * 100;
+
+            let trendDescription = '';
+            if (percentChange > 2) {
+                trendDescription = `The stock has shown strong bullish momentum, rising **${percentChange.toFixed(1)}%** over the last ${days} days.`;
+            } else if (percentChange < -2) {
+                trendDescription = `The stock has pulled back by **${Math.abs(percentChange).toFixed(1)}%**, showing a short-term downward correction.`;
+            } else {
+                trendDescription = `The stock has been trading sideways with minor fluctuations (**${percentChange.toFixed(1)}%**) over this period.`;
+            }
+
+            const response = `${table}\n\n**Trend:**\n\n${trendDescription}\n\nShort-term momentum shows ${percentChange >= 0 ? 'steady growth' : 'a minor correction'} based on recent closing values.\n\n📊 **Current price (latest trade):** ~${currency}${quote.price.toFixed(2)}`;
+
+            return response;
+        } catch (e) {
+            console.error('History response error:', e);
+            return `Sorry, I encountered an error while retrieving the price history for **${symbol}**.`;
         }
     }
 
@@ -164,7 +256,13 @@ ${changeColor} **Change:** ${changeSign}${curr}${quote.change?.toFixed(2)} (${ch
     }
 
     async generateResponse(userMessage, chatHistory = []) {
-        // Step 1: Check if it's a direct stock price question — answer it immediately with precise data
+        // Step 1a: Check for historical data request
+        const historyQuery = this.detectStockHistoryQuery(userMessage);
+        if (historyQuery) {
+            return await this.generateStockHistoryResponse(historyQuery.symbol, historyQuery.days);
+        }
+
+        // Step 1b: Check if it's a direct stock price question
         const priceSymbol = this.detectStockPriceQuery(userMessage);
         if (priceSymbol) {
             return await this.generateStockPriceResponse(priceSymbol);

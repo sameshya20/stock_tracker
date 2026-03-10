@@ -10,10 +10,7 @@ const User = sequelize.define('User', {
     },
     name: {
         type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            len: [1, 50]
-        }
+        allowNull: false
     },
     email: {
         type: DataTypes.STRING,
@@ -68,7 +65,6 @@ const User = sequelize.define('User', {
     }
 });
 
-// Instance method to compare password
 User.prototype.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };

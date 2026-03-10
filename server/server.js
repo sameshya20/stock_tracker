@@ -1,7 +1,7 @@
-const dotenv = require('dotenv');
+require('dotenv').config();
 const dns = require('dns');
+// Prefer IPv4 globally to fix Supabase/Render DNS issues
 dns.setDefaultResultOrder('ipv4first');
-dotenv.config();
 
 const express = require('express');
 const http = require('http');
@@ -45,11 +45,9 @@ app.use('/api/alerts', require('./routes/alertRoutes'));
 
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {
-    // Set static folder
     app.use(express.static(path.join(__dirname, '../client/dist')));
 
     app.get('*', (req, res, next) => {
-        // If the request starts with /api, it should have been handled by the routes above
         if (req.path.startsWith('/api')) return next();
         res.sendFile(path.resolve(__dirname, '../client', 'dist', 'index.html'));
     });
@@ -66,7 +64,6 @@ const activeSubscriptions = new Map();
 io.on('connection', (socket) => {
     console.log(`Client connected: ${socket.id}`);
 
-    // Subscribe to stock updates
     socket.on('subscribe', (symbols) => {
         if (Array.isArray(symbols)) {
             activeSubscriptions.set(socket.id, symbols);
@@ -74,7 +71,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Unsubscribe
     socket.on('unsubscribe', () => {
         activeSubscriptions.delete(socket.id);
     });
@@ -114,7 +110,6 @@ setInterval(async () => {
 
         if (!activeAlerts || activeAlerts.length === 0) return;
 
-        // Group by symbol to reduce API calls
         const symbols = [...new Set(activeAlerts.map(a => a.symbol))];
         const quotes = await Promise.all(symbols.map(s => StockService.getQuote(s)));
         const quoteMap = {};
@@ -137,8 +132,6 @@ setInterval(async () => {
 
             if (triggered) {
                 await sendAlertEmail(alert.user.email, alert.symbol, alert.condition, alert.targetPrice, currentPrice);
-
-                // Mark alert as inactive to prevent spamming
                 alert.isActive = false;
                 alert.lastTriggeredAt = new Date();
                 await alert.save();
@@ -159,5 +152,5 @@ server.listen(PORT, () => {
   ║   Port: ${PORT}                         ║
   ║   Mode: ${process.env.NODE_ENV || 'development'}                  ║
   ╚══════════════════════════════════════╝
-  `);
+    `);
 });

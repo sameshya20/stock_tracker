@@ -10,11 +10,7 @@ const Alert = sequelize.define('Alert', {
     },
     userId: {
         type: DataTypes.UUID,
-        allowNull: false,
-        references: {
-            model: User,
-            key: 'id'
-        }
+        allowNull: false
     },
     symbol: {
         type: DataTypes.STRING,
