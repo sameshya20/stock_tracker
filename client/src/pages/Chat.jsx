@@ -173,11 +173,11 @@ const Chat = () => {
                 {/* Chat Header */}
                 <div className="px-6 py-4 border-b border-dark-border flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                        <span className="text-white text-lg">🤖</span>
+                        <span className="text-white text-lg">📈</span>
                     </div>
                     <div>
                         <h2 className="text-sm font-semibold text-dark-text">AI Stock Assistant</h2>
-                        <p className="text-xs text-dark-text-secondary">Powered by RAG • Financial Knowledge</p>
+                        <p className="text-xs text-dark-text-secondary">Real-Time Data • Technical Analysis • Financial Insights</p>
                     </div>
                 </div>
 
@@ -186,11 +186,11 @@ const Chat = () => {
                     {messages.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-full text-center">
                             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-6">
-                                <span className="text-3xl">🤖</span>
+                                <span className="text-3xl">📈</span>
                             </div>
-                            <h3 className="text-xl font-bold text-dark-text mb-2">AI Stock Market Assistant</h3>
+                            <h3 className="text-xl font-bold text-dark-text mb-2">AI Stock Assistant</h3>
                             <p className="text-dark-text-secondary text-sm mb-8 max-w-md">
-                                I can help you understand financial concepts, analyze stocks, and provide market insights using RAG-powered knowledge retrieval.
+                                Your intelligent financial analyst for real-time stock data, technical indicators, and educational market insights.
                             </p>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-2xl">
                                 {quickPrompts.map((prompt, i) => (

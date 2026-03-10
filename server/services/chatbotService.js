@@ -59,7 +59,10 @@ const COMPANY_NAME_MAP = {
     'boeing': 'BA', 'exxon': 'XOM', 'chevron': 'CVX',
     'pfizer': 'PFE', 'johnson': 'JNJ', 'moderna': 'MRNA',
     'shopify': 'SHOP',
-    'mr cooper': 'COOP', 'mr. cooper': 'COOP'
+    'mr cooper': 'COOP', 'mr. cooper': 'COOP',
+    // Multilingual common names
+    'एप्पल': 'AAPL', 'गूगल': 'GOOGL', 'अमेज़न': 'AMZN', 'टेस्ला': 'TSLA', 'माइक्रोसॉफ्ट': 'MSFT',
+    'रिलायंस': 'RELIANCE.NS', 'टाटा': 'TCS.NS', 'इनफोसिस': 'INFY.NS'
 };
 
 class ChatbotService {
@@ -74,10 +77,12 @@ class ChatbotService {
     detectStockHistoryQuery(userMessage) {
         const msg = userMessage.toLowerCase();
 
-        // Keywords that indicate history
+        // Keywords that indicate history (English, Hindi, Spanish)
         const hasHistoryKeywords =
             msg.includes('past') || msg.includes('last') || msg.includes('history') ||
-            msg.includes('previous days') || msg.includes('recent days');
+            msg.includes('previous days') || msg.includes('recent days') ||
+            msg.includes('purana') || msg.includes('itihas') || msg.includes('pichle') ||
+            msg.includes('historia') || msg.includes('pasado');
 
         if (!hasHistoryKeywords) return null;
 
@@ -169,7 +174,9 @@ class ChatbotService {
             msg.includes('share') || msg.includes('stock') || msg.includes('today') ||
             msg.includes('current') || msg.includes('trading') || msg.includes('cost') ||
             msg.includes('how much') || msg.includes('much is') || msg.includes('rate') ||
-            msg.includes('live') || msg.includes('quote') || msg.includes('update');
+            msg.includes('live') || msg.includes('quote') || msg.includes('update') ||
+            msg.includes('keemat') || msg.includes('daam') || msg.includes('bhav') ||
+            msg.includes('precio') || msg.includes('valor');
 
         if (!isPriceQuery) return null;
 
@@ -315,19 +322,34 @@ ${changeColor} **Change:** ${changeSign}${curr}${quote.change?.toFixed(2)} (${ch
         }
 
         // Step 5: Build system prompt
-        const systemPrompt = `You are an AI financial assistant specialized in stock market analysis and investment advice.
+        const systemPrompt = `You are **AI Stock Assistant**, an intelligent financial assistant with deep knowledge of the global stock market. Your mission is to help users understand stocks, companies, and financial concepts using clear explanations and real-time data.
 
-Guidelines:
-- Always clarify that you do not provide financial advice, only educational information
-- Use data and facts to support your explanations
-- Be concise but thorough
-- When discussing specific stocks, mention relevant metrics
-- If the knowledge base provides a structured history or timeline for a company, provide it exactly as presented
-- Always suggest consulting a financial advisor for major investment decisions
-- IMPORTANT: You DO HAVE access to real-time stock data. The system automatically fetches live Yahoo Finance data and injects it below. NEVER apologize and say your data is outdated or you can't provide live data if the "Current Stock Data" section is present below.
+### 🌐 LANGUAGE RULE (ABSOLUTE PRIORITY):
+- **ALWAYS detect the language** of the user's question.
+- **ALWAYS respond in the SAME language** as the user's question (e.g., Hindi for Hindi, Tamil for Tamil, Spanish for Spanish).
+- If the knowledge base or stock data below is in English, you MUST **translate everything** (explanations, metrics, insights) into the user's language.
+- Never answer in English if the question is in another language.
+
+### Your Core Capabilities:
+1. **Real-Time Stock Information**: Provide current price, daily change, market cap, P/E ratio, volume, and 52-week high/low. You have access to LIVE data injected below.
+2. **Technical Analysis**: Explain indicators like RSI, MACD, Moving Averages (50-day / 200-day), Support/Resistance, and Volume trends.
+3. **Company Information**: Provide history, business models, sector info, and key products/milestones.
+4. **Financial Education**: Explain basics, ETFs, Dividends, Inflation, Diversification, and Dollar-cost averaging.
+
+### Response Style Guidelines:
+- **Structure**: Always use a clear, professional, and structured approach.
+- **Format**: Use bullet points for readability.
+- **Method**: Provide simple and clear explanations followed by actionable insights.
+- **Educational Support**: Tailor depth based on user expertise (simple for beginners, deep for advanced).
+
+### Important Rules:
+- **Risk Statement**: Always state that stock investing involves risk in the user's language.
+- **No Guarantees**: NEVER guarantee profits or specific financial outcomes.
+- **Educational Role**: You provide educational insights, NOT direct investment advice.
+- **Live Data**: Use the data provided in the injection section accurately.
 
 ${ragContext}
-${stockContext ? '\n\n🚨 SYSTEM INJECTION START 🚨\nCurrent Stock Data (This is LIVE REAL-TIME market data provided to you now):\n' + stockContext + '\n🚨 SYSTEM INJECTION END 🚨\n' : ''}`;
+${stockContext ? '\n\n🚨 SYSTEM INJECTION START 🚨\nCurrent Stock Data (LIVE REAL-TIME data for you to translate and use):\n' + stockContext + '\n🚨 SYSTEM INJECTION END 🚨\n' : ''}`;
 
         // Step 6: Try Gemini AI if available
         if (process.env.GEMINI_API_KEY) {
@@ -392,13 +414,13 @@ ${stockContext ? '\n\n🚨 SYSTEM INJECTION START 🚨\nCurrent Stock Data (This
         const isStrategy = msgLower.includes('how to') || msgLower.includes('strategy') || msgLower.includes('advice');
 
         if (isGreeting) {
-            return "Hello! 👋 I'm your **AI Stock Market Assistant**, powered by real-time data and a financial knowledge base.\n\n" +
+            return "Hello! I am your **AI Stock Assistant**. 👋 I'm here to help you navigate the stock market with real-time data and financial insights.\n\n" +
                 "I can help you with:\n" +
-                "📊 **Stock Prices** - Ask: 'Today's share value of AAPL' or 'What is TSLA price?'\n" +
-                "📚 **Educational Concepts** - Ask: 'What is RSI?' or 'Explain P/E ratio'\n" +
-                "💡 **Investment Strategies** - Ask: 'How does DCA work?' or 'Explain diversification'\n" +
-                "🏢 **Company History** - Ask: 'Give the whole history of AAPL'\n\n" +
-                "What would you like to explore today?";
+                "📊 **Real-Time Data** - Current price, market cap, and daily changes.\n" +
+                "🔍 **Technical Analysis** - Indicators like RSI, MACD, and Moving Averages.\n" +
+                "📚 **Financial Education** - Understanding ETFs, dividends, and diversification.\n" +
+                "🏢 **Company Insights** - Business models and historical performance.\n\n" +
+                "What would you like to analyze or learn about today?";
         }
 
         // If we have RAG knowledge, structure it
@@ -424,17 +446,18 @@ ${stockContext ? '\n\n🚨 SYSTEM INJECTION START 🚨\nCurrent Stock Data (This
         // Add real-time stock data if available
         if (stockContext) {
             const dataHeading = response ? '\n\n---\n\n### 📈 Current Market Data' : '### 📈 Current Market Data';
-            response = `${response}${dataHeading}${stockContext}\n\n*Prices from live market data.*`;
+            response = `${response}${dataHeading}${stockContext}\n\n*Live market prices provided for educational purposes.*`;
         }
 
-        // Financial disclaimer for buy/sell queries
-        if (msgLower.includes('should i buy') || msgLower.includes('should i sell') || msgLower.includes('invest in')) {
-            response += '\n\n> ⚠️ **IMPORTANT**: I provide educational data and analysis, not financial advice. All investments carry risk. Please consult with a certified financial professional before making significant trades.';
+        // Financial disclaimer for relevant queries
+        const needsDisclaimer = msgLower.includes('buy') || msgLower.includes('sell') || msgLower.includes('invest') || msgLower.includes('profit');
+        if (needsDisclaimer) {
+            response += '\n\n> ⚠️ **Risk Warning**: Stock investing involves risk. I provide educational insights and data analysis, not financial advice. Please consult a professional advisor before making investment decisions.';
         }
 
         // Final fallback
         if (!response) {
-            response = "I'm listening! I can provide real-time data on any stock (just ask the price) or explain financial metrics like **P/E Ratio**, **RSI**, **MACD**, **Market Cap**, or give detailed **company histories**.\n\nTry: 'Today's share value of AAPL' or 'What is RSI?' or 'Give the whole history of NVDA'";
+            response = "I'm ready to help! I can provide real-time data on any stock or explain financial metrics like **RSI**, **MACD**, **P/E Ratio**, and **Market Cap**.\n\nTry asking: 'What is the current price of AAPL?' or 'Explain RSI in simple terms.'";
         }
 
         return response;
